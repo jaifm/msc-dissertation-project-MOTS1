@@ -1,0 +1,22 @@
+name: msc-dissertation-mots1
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - xgboost
+  - matplotlib
+  - seaborn
+  - jupyterlab
+  - ipykernel
+  - tqdm
+  - python-dotenv
+  - pyyaml
+  - mlflow
+  - pytest
+  - black
+  - ruff
