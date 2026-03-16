@@ -72,3 +72,50 @@ print("Expanded dataset with formulation components:")
 print(f"Shape: {df_expanded.shape}")
 print(f"New columns: NMC_pct, C65_pct, KS6L_pct, PVDF_pct")
 print(f"Saved to: {expanded_path}")
+
+# ============================================================
+# Create paper replication dataset with one-hot encoding for categorical variables
+# ============================================================
+
+df_replication = df_combined.copy()
+
+target_cols = [
+    "Viscosity_at_shear_rate_1_1/s",
+    "Viscosity_at_shear_rate_10_1/s",
+    "Viscosity_at_shear_rate_100_1/s",
+]
+
+# Required one-hot categorical columns for paper replication
+categorical_cols = ["Formulation", "Dispersent_Type"]
+
+# Continuous predictors (kept unscaled for modelling stage)
+exclude_from_predictors = set(target_cols + ["Composite_Mix_ID", "Source_Batch"])
+continuous_cols = [
+    column
+    for column in df_replication.columns
+    if column not in exclude_from_predictors and column not in categorical_cols
+]
+
+# Keep only relevant modelling columns
+replication_columns = categorical_cols + continuous_cols + target_cols
+df_replication = df_replication[replication_columns].copy()
+
+# One-hot encode only the categorical columns, keep continuous columns unchanged
+df_one_hot = pd.get_dummies(
+    df_replication[categorical_cols],
+    prefix=["Formulation", "Dispersent_Type"],
+)
+
+df_paper_replication = pd.concat(
+    [df_one_hot, df_replication[continuous_cols], df_replication[target_cols]],
+    axis=1,
+)
+
+paper_replication_path = Path("data/processed/paper_replication_data.csv")
+df_paper_replication.to_csv(paper_replication_path, index=False)
+
+print("\n" + "=" * 50)
+print("Paper replication dataset created:")
+print(f"Shape: {df_paper_replication.shape}")
+print(f"Saved to: {paper_replication_path}")
+print("Encoding: one-hot (Formulation, Dispersent_Type)")
