@@ -1,0 +1,16 @@
+{
+  "input": "data/processed/combined_slurry_data_expanded.csv",
+  "output_dir": "data/processed/splits",
+  "train_path": "data/processed/splits/expanded_train.csv",
+  "test_path": "data/processed/splits/expanded_test.csv",
+  "manifest_path": "data/processed/splits/expanded_split_manifest.csv",
+  "seed": 42,
+  "test_size": 0.2,
+  "group_column": "Composite_Mix_ID",
+  "n_rows": 178,
+  "n_train_rows": 136,
+  "n_test_rows": 42,
+  "n_groups_total": 68,
+  "n_groups_train": 54,
+  "n_groups_test": 14
+}

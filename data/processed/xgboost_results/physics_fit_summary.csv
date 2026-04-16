@@ -1,0 +1,6 @@
+model_name,train_rows,test_rows,train_failures,test_failures,targets
+5-parameter CY,136,42,0,0,"[""eta_0"", ""eta_inf"", ""lambda_time"", ""n"", ""a""]"
+Power Law,136,42,0,0,"[""k_consistency"", ""n_flow""]"
+Sisko,136,42,0,0,"[""eta_inf_sisko"", ""k_sisko"", ""n_sisko""]"
+Williamson,136,42,0,0,"[""eta_0"", ""eta_inf"", ""lambda_time"", ""n_w""]"
+Constrained CY,136,42,0,0,"[""eta_0"", ""lambda_time"", ""n""]"

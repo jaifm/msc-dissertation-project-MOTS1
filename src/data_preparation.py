@@ -1,5 +1,8 @@
-import pandas as pd
+import json
 from pathlib import Path
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
 # Load data
 data_dir = Path("data/raw")
@@ -72,6 +75,100 @@ print("Expanded dataset with formulation components:")
 print(f"Shape: {df_expanded.shape}")
 print(f"New columns: NMC_pct, C65_pct, KS6L_pct, PVDF_pct")
 print(f"Saved to: {expanded_path}")
+
+
+def create_reproducible_group_split(
+    input_path: Path = Path("data/processed/combined_slurry_data_expanded.csv"),
+    output_dir: Path = Path("data/processed/splits"),
+    group_column: str = "Composite_Mix_ID",
+    test_size: float = 0.2,
+    seed: int = 42,
+) -> dict:
+    """Split a processed dataset into reproducible train/test sets.
+
+    The split is performed on the unique values in ``group_column`` so that
+    replicates remain in the same partition.
+    """
+
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file not found: {input_path}")
+
+    df = pd.read_csv(input_path)
+    if group_column not in df.columns:
+        raise ValueError(
+            f"Required grouping column '{group_column}' was not found in {input_path}."
+        )
+
+    unique_groups = df[group_column].dropna().unique()
+    train_groups, test_groups = train_test_split(
+        unique_groups,
+        test_size=test_size,
+        random_state=seed,
+        shuffle=True,
+    )
+
+    train_groups = set(train_groups)
+    test_groups = set(test_groups)
+    overlap = train_groups & test_groups
+    if overlap:
+        raise RuntimeError(
+            "Split leakage detected: the following groups appear in both train and test sets: "
+            f"{sorted(overlap)}"
+        )
+
+    train_df = df[df[group_column].isin(train_groups)].copy()
+    test_df = df[df[group_column].isin(test_groups)].copy()
+
+    train_overlap = set(train_df[group_column].dropna().unique()) & set(test_df[group_column].dropna().unique())
+    if train_overlap:
+        raise RuntimeError(
+            "Split leakage detected after filtering rows: "
+            f"{sorted(train_overlap)}"
+        )
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    train_path = output_dir / "expanded_train.csv"
+    test_path = output_dir / "expanded_test.csv"
+    manifest_path = output_dir / "expanded_split_manifest.csv"
+    metadata_path = output_dir / "expanded_split_metadata.json"
+
+    train_df.to_csv(train_path, index=False)
+    test_df.to_csv(test_path, index=False)
+
+    manifest_df = pd.DataFrame(
+        {
+            group_column: sorted(train_groups) + sorted(test_groups),
+            "split": ["train"] * len(train_groups) + ["test"] * len(test_groups),
+        }
+    ).sort_values(["split", group_column]).reset_index(drop=True)
+    manifest_df.to_csv(manifest_path, index=False)
+
+    metadata = {
+        "input": str(input_path),
+        "output_dir": str(output_dir),
+        "train_path": str(train_path),
+        "test_path": str(test_path),
+        "manifest_path": str(manifest_path),
+        "seed": seed,
+        "test_size": test_size,
+        "group_column": group_column,
+        "n_rows": int(len(df)),
+        "n_train_rows": int(len(train_df)),
+        "n_test_rows": int(len(test_df)),
+        "n_groups_total": int(len(unique_groups)),
+        "n_groups_train": int(len(train_groups)),
+        "n_groups_test": int(len(test_groups)),
+    }
+    metadata_path.write_text(json.dumps(metadata, indent=2))
+
+    return {
+        "train_path": train_path,
+        "test_path": test_path,
+        "manifest_path": manifest_path,
+        "metadata_path": metadata_path,
+        "metadata": metadata,
+    }
 
 # ============================================================
 # Create paper replication dataset
